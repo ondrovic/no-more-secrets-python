@@ -1,0 +1,54 @@
+{
+  "pyproject.toml": null,
+  "README.md": null,
+  "LICENSE": null,
+  ".gitignore": null,
+  ".pre-commit-config.yaml": null,
+  "Makefile": null,
+  "mkdocs.yml": null,
+  ".env.example": null,
+  ".github": {
+    "workflows": {
+      "ci.yml": null
+    }
+  },
+  "no_more_secrets": {
+    "__init__.py": null,
+    "core": {
+      "__init__.py": null,
+      "colors.py": null,
+      "terminal.py": null,
+      "char_attr.py": null,
+      "charset.py": null
+    },
+    "effects": {
+      "__init__.py": null,
+      "nms_effect.py": null
+    },
+    "utils": {
+      "__init__.py": null,
+      "encoding.py": null,
+      "input_handler.py": null,
+      "ansi.py": null
+    },
+    "cli": {
+      "__init__.py": null,
+      "main.py": null,
+      "sneakers.py": null
+    }
+  },
+  "tests": {
+    "__init__.py": null,
+    "test_basic.py": null,
+    "test_colors.py": null,
+    "test_encoding.py": null,
+    "test_ansi.py": null,
+    "test_nms_effect.py": null,
+    "test_terminal.py": null
+  },
+  "docs": {
+    "index.md": null,
+    "api.md": null,
+    "contributing.md": null
+  }
+}
