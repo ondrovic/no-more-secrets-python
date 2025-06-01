@@ -16,6 +16,31 @@ A Python recreation of the famous data decryption effect from the 1992 hacker mo
 - **Color Preservation**: Can preserve original terminal colors from command output
 - **Movie Recreation**: Includes `sneakers` command for exact movie scene
 
+## Demos
+<details>
+<summary>Hello, World!</summary>
+
+![Hello, World!](demos/hello_world.gif)
+</details>
+
+<details>
+<summary>LS --color=awlays</summary>
+
+![ls](demos/nms_ls.gif)
+</details>
+
+<details>
+<summary>tree</summary>
+
+![Hello, World!](demos/tree.gif)
+</details>
+
+<details>
+<summary>Sneakers</summary>
+
+![Hello, World!](demos/sneakers.gif)
+</details>
+
 ## Installation
 
 ### Using Poetry (Recommended)

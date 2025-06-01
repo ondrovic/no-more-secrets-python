@@ -120,7 +120,7 @@ def main() -> None:
         effect = NMSEffect()
         effect.set_clear_screen(True)  # Always clear screen for movie effect
         effect.set_foreground_color('blue')  # Classic blue color
-        effect.set_auto_decrypt(False)  # Require keypress like in movie
+        effect.set_auto_decrypt(False)  # Require keypress like in movie if
         
         # Execute the effect
         effect.execute(display_text)
