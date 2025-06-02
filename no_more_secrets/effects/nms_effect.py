@@ -9,7 +9,13 @@ import time
 from typing import List
 
 from ..core.char_attr import CharAttr
-from ..core.charset import get_random_char
+from ..core.charset import (
+    get_random_char,
+    get_random_char_excluding_control,
+    get_random_printable_char,
+    get_random_extended_char,
+    get_random_box_drawing_char,
+)
 from ..core.colors import Colors, get_color_map, get_color_prefix, hex_to_rgb, rgb_to_ansi
 from ..core.terminal import Terminal, enable_ansi_colors
 from ..utils.encoding import get_char_width
@@ -26,6 +32,7 @@ class NMSEffect:
         self.foreground_color = Colors.BLUE
         self.custom_hex_color: str | None = None
         self.preserve_colors = False
+        self.charset_mode = "full"  # "full", "no_control", "printable", "extended", "box_drawing"
     
     def set_auto_decrypt(self, setting: bool) -> None:
         """Set auto-decrypt mode."""
@@ -66,6 +73,34 @@ class NMSEffect:
         """Set whether to preserve original terminal colors."""
         self.preserve_colors = setting
     
+    def set_charset_mode(self, mode: str) -> None:
+        """Set the character set mode for scrambling effect.
+        
+        Args:
+            mode: One of "full", "no_control", "printable", "extended", "box_drawing"
+        """
+        valid_modes = ["full", "no_control", "printable", "extended", "box_drawing"]
+        if mode in valid_modes:
+            self.charset_mode = mode
+        else:
+            print(f"ERROR: Invalid charset mode '{mode}'. Valid modes: {', '.join(valid_modes)}", file=sys.stderr)
+            self.charset_mode = "full"
+    
+    def _get_scramble_char(self) -> str:
+        """Get a scrambling character based on the current charset mode."""
+        if self.charset_mode == "full":
+            return get_random_char()
+        elif self.charset_mode == "no_control":
+            return get_random_char_excluding_control()
+        elif self.charset_mode == "printable":
+            return get_random_printable_char()
+        elif self.charset_mode == "extended":
+            return get_random_extended_char()
+        elif self.charset_mode == "box_drawing":
+            return get_random_box_drawing_char()
+        else:
+            return get_random_char()  # fallback
+    
     def parse_ansi_text(self, text: str) -> List[CharAttr]:
         """Parse text with ANSI codes and preserve color information."""
         char_attrs = []
@@ -97,11 +132,11 @@ class NMSEffect:
             # Determine if it's a space character we should preserve
             is_space = char.isspace() and (not self.mask_blank or char != ' ')
             
-            # For non-space characters, use a mask
+            # For non-space characters, use a mask based on charset mode
             if is_space:
                 mask = char
             else:
-                mask = get_random_char()
+                mask = self._get_scramble_char()
             
             # Get display width
             width = get_char_width(char)
@@ -153,11 +188,11 @@ class NMSEffect:
             # Determine if it's a space character we should preserve
             is_space = char.isspace() and (not self.mask_blank or char != ' ')
             
-            # For non-space characters, use a mask
+            # For non-space characters, use a mask based on charset mode
             if is_space:
                 mask = char
             else:
-                mask = get_random_char()
+                mask = self._get_scramble_char()
             
             # Get display width
             width = get_char_width(char)
@@ -245,7 +280,7 @@ class NMSEffect:
             else:
                 self._wait_for_keypress()
             
-            # Phase 2: Jumble effect
+            # Phase 2: Jumble effect using charset mode
             start_time = time.time()
             while time.time() - start_time < 2.0:
                 print("\033[H", end='')
@@ -253,7 +288,7 @@ class NMSEffect:
                     if attr.is_space:
                         print(attr.source, end='')
                     else:
-                        print(get_random_char(), end='')
+                        print(self._get_scramble_char(), end='')
                 sys.stdout.flush()
                 time.sleep(0.035)
             
@@ -271,10 +306,10 @@ class NMSEffect:
                     
                     # Check if this character should be revealed
                     if attr.reveal_time > 0:
-                        # Still scrambled
+                        # Still scrambled - use charset mode for scrambling
                         attr.reveal_time -= 50
                         if random.randint(0, 5) == 0:
-                            attr.mask = get_random_char()
+                            attr.mask = self._get_scramble_char()
                         print(attr.mask, end='')  # WHITE/NORMAL
                         all_revealed = False
                     else:

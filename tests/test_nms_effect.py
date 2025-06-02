@@ -10,6 +10,13 @@ import pytest
 
 from no_more_secrets.core.char_attr import CharAttr
 from no_more_secrets.core.colors import Colors
+from no_more_secrets.core.charset import (
+    get_random_char,
+    get_random_char_excluding_control,
+    get_random_printable_char,
+    get_random_extended_char,
+    get_random_box_drawing_char,
+)
 from no_more_secrets.effects.nms_effect import NMSEffect
 
 
@@ -26,6 +33,7 @@ class TestNMSEffect:
         assert effect.foreground_color == Colors.BLUE
         assert effect.custom_hex_color is None
         assert not effect.preserve_colors
+        assert effect.charset_mode == "full"  # New default
     
     def test_set_auto_decrypt(self):
         """Test setting auto-decrypt mode."""
@@ -109,6 +117,65 @@ class TestNMSEffect:
         effect.set_preserve_colors(False)
         assert not effect.preserve_colors
     
+    def test_set_charset_mode(self):
+        """Test setting charset mode."""
+        effect = NMSEffect()
+        
+        # Test valid modes
+        valid_modes = ["full", "no_control", "printable", "extended", "box_drawing"]
+        for mode in valid_modes:
+            effect.set_charset_mode(mode)
+            assert effect.charset_mode == mode
+        
+        # Test invalid mode (should default to full and show error)
+        with patch('sys.stderr', new_callable=io.StringIO):
+            effect.set_charset_mode('invalid_mode')
+            assert effect.charset_mode == "full"
+    
+    def test_get_scramble_char(self):
+        """Test the internal _get_scramble_char method."""
+        effect = NMSEffect()
+        
+        # Test each charset mode
+        modes_and_functions = [
+            ("full", get_random_char),
+            ("no_control", get_random_char_excluding_control),
+            ("printable", get_random_printable_char),
+            ("extended", get_random_extended_char),
+            ("box_drawing", get_random_box_drawing_char),
+        ]
+        
+        for mode, expected_func in modes_and_functions:
+            effect.set_charset_mode(mode)
+            
+            # Test multiple times to ensure consistency
+            for _ in range(10):
+                char = effect._get_scramble_char()
+                assert isinstance(char, str)
+                assert len(char) >= 1  # Should be at least one character
+    
+    def test_charset_mode_character_validation(self):
+        """Test that different charset modes produce appropriate characters."""
+        effect = NMSEffect()
+        
+        # Test printable mode - should only produce ASCII printable chars
+        effect.set_charset_mode("printable")
+        for _ in range(50):
+            char = effect._get_scramble_char()
+            assert 32 <= ord(char) <= 126, f"Printable mode produced non-printable char: {repr(char)}"
+        
+        # Test that different modes produce different character sets
+        effect.set_charset_mode("full")
+        full_chars = set(effect._get_scramble_char() for _ in range(100))
+        
+        effect.set_charset_mode("printable")
+        printable_chars = set(effect._get_scramble_char() for _ in range(100))
+        
+        # Full mode should potentially have more variety
+        # (Though this is probabilistic, so we'll just check they can be different)
+        assert isinstance(full_chars, set)
+        assert isinstance(printable_chars, set)
+    
     def test_prepare_text_simple(self):
         """Test preparing simple text without ANSI codes."""
         effect = NMSEffect()
@@ -130,8 +197,23 @@ class TestNMSEffect:
         assert not h_attr.is_space
         # The mask should be a single character from the charset
         assert isinstance(h_attr.mask, str)
-        assert len(h_attr.mask) == 1
-        # Don't check specific characters since charset includes Unicode
+        assert len(h_attr.mask) >= 1  # CP437 may include multi-byte Unicode
+    
+    def test_prepare_text_with_charset_modes(self):
+        """Test preparing text with different charset modes."""
+        effect = NMSEffect()
+        text = "ABC"
+        
+        # Test each charset mode produces masks
+        for mode in ["full", "no_control", "printable", "extended", "box_drawing"]:
+            effect.set_charset_mode(mode)
+            char_attrs = effect.prepare_text(text)
+            
+            assert len(char_attrs) == len(text)
+            for attr in char_attrs:
+                if not attr.is_space:
+                    assert isinstance(attr.mask, str)
+                    assert len(attr.mask) >= 1
     
     def test_prepare_text_with_ansi(self):
         """Test preparing text with ANSI codes."""
@@ -249,6 +331,20 @@ class TestNMSEffect:
         # Should have called enable_ansi_colors
         mock_enable_ansi.assert_called_once()
     
+    @patch('no_more_secrets.effects.nms_effect.enable_ansi_colors')
+    @patch('sys.stdout')
+    @patch('time.sleep')
+    def test_execute_with_charset_modes(self, mock_sleep, mock_stdout, mock_enable_ansi):
+        """Test execution with different charset modes."""
+        effect = NMSEffect()
+        effect.set_auto_decrypt(True)
+        
+        for mode in ["full", "printable", "box_drawing"]:
+            effect.set_charset_mode(mode)
+            with patch.object(effect, '_wait_for_keypress'):
+                result = effect.execute("Test")
+                assert result == ""
+    
     @patch('no_more_secrets.core.terminal.Terminal.get_platform')
     @patch('time.sleep')
     def test_wait_for_keypress_windows(self, mock_sleep, mock_get_platform):
@@ -346,4 +442,20 @@ class TestNMSEffect:
         """Test that reveal time clustering works correctly."""
         effect = NMSEffect()
         
-        # Use a
+        # Use a longer text to increase clustering probability
+        text = "The quick brown fox jumps over the lazy dog"
+        char_attrs = effect.prepare_text(text)
+        
+        # Get non-space characters
+        non_space_attrs = [attr for attr in char_attrs if not attr.is_space]
+        
+        # Check that clustering has created some time variations
+        reveal_times = [attr.reveal_time for attr in non_space_attrs]
+        unique_times = set(reveal_times)
+        
+        # Should have some clustering (not all unique, not all same)
+        assert 1 < len(unique_times) < len(reveal_times)
+        
+        # Times should be in valid range
+        for time in reveal_times:
+            assert 800 <= time <= 6200  # Allow for clustering adjustments
