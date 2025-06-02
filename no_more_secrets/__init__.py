@@ -4,10 +4,15 @@ A Python recreation of the famous data decryption effect from the 1992 movie Sne
 """
 
 from __future__ import annotations
+from importlib.metadata import version, PackageNotFoundError
 
-__version__ = "1.0.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+try:
+    __version__ = version("no-more-secrets")  # This should match your package name in pyproject.toml
+except PackageNotFoundError:
+    __version__ = "unknown"
+
+__author__ = "Chris Ondrovic"
+__email__ = "ondrovic@gmail.com"
 
 from .effects.nms_effect import NMSEffect
 

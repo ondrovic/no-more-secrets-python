@@ -6,6 +6,7 @@ import argparse
 import re
 import sys
 
+from no_more_secrets import __version__
 from no_more_secrets.utils.ansi import has_ansi_codes
 
 from ..effects.nms_effect import NMSEffect
@@ -63,7 +64,7 @@ Examples:
                        help='Preserve original terminal colors from command output')
     parser.add_argument('--test-colors', action='store_true',
                        help='Test color output and exit')
-    parser.add_argument('-v', '--version', action='version', version='nms-python 1.0.0')
+    parser.add_argument('-v', '--version', action='version', version=f'nms-python {__version__}')
     parser.add_argument('text', nargs='?', help='Text to process (if not using pipe)')
     
     return parser

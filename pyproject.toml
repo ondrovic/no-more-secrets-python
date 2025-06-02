@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "no-more-secrets"
-version = "1.0.1"
+version = "1.0.2"
 description = "A Python recreation of the famous data decryption effect from the 1992 movie Sneakers"
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
